@@ -1,5 +1,16 @@
 export GUEST_MODULE_PREFIX:=$(abspath .)
 
+CRATES_TESTED = \
+	lucet-runtime-internals \
+	lucet-runtime \
+	lucet-module \
+	lucetc \
+	lucet-wasi-sdk \
+	lucet-wasi \
+	lucet-wasi-fuzz \
+	lucet-validate \
+	lucet-wiggle
+
 .PHONY: build-dev
 build-dev:
 	@echo Creating a DEBUG build
@@ -25,19 +36,18 @@ test: indent-check test-packages
 
 .PHONY: test-packages
 test-packages:
-	cargo test --no-fail-fast \
-            -p lucet-runtime-internals \
-            -p lucet-runtime \
-            -p lucet-module \
-            -p lucetc \
-            -p lucet-wasi-sdk \
-            -p lucet-wasi \
-            -p lucet-wasi-fuzz \
-            -p lucet-validate \
-            -p lucet-wiggle
+	cargo test --no-fail-fast $(CRATES_TESTED:%=-p %)
 
 .PHONY: test-full
 test-full: indent-check audit book test-ci test-benchmarks test-fuzz
+
+# The --profile release option runs the tests on an artifact built in release
+# mode. We have found regressions in release mode due to optimizations in the
+# past. However, this is an unstable only option for now, so we have to run it
+# on nightly.
+.PHONY: test-release
+test-release:
+	cargo +nightly test -Z unstable-options --profile release --no-fail-fast $(CRATES_TESTED:%=-p %)
 
 .PHONY: test-ci
 test-ci: test-packages test-objdump test-bitrot test-signature test-objdump
@@ -106,12 +116,4 @@ package:
 
 .PHONY: watch
 watch:
-	cargo watch --exec "test \
-            -p lucet-runtime-internals \
-            -p lucet-runtime \
-            -p lucet-module \
-            -p lucetc \
-            -p lucet-wasi-sdk \
-            -p lucet-wasi \
-            -p lucet-benchmarks \
-            -p lucet-validate"
+	cargo watch --exec "test $(CRATES_TESTED:%=-p %)"

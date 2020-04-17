@@ -1,15 +1,6 @@
 export GUEST_MODULE_PREFIX:=$(abspath .)
 
-CRATES_TESTED = \
-	lucet-runtime-internals \
-	lucet-runtime \
-	lucet-module \
-	lucetc \
-	lucet-wasi-sdk \
-	lucet-wasi \
-	lucet-wasi-fuzz \
-	lucet-validate \
-	lucet-wiggle
+CRATES_NOT_TESTED = lucet-spectest lucet-benchmarks lucet-runtime-example
 
 .PHONY: build-dev
 build-dev:
@@ -36,7 +27,7 @@ test: indent-check test-packages
 
 .PHONY: test-packages
 test-packages:
-	cargo test --no-fail-fast $(CRATES_TESTED:%=-p %)
+	cargo test --no-fail-fast --all $(CRATES_NOT_TESTED:%=--exclude %)
 
 .PHONY: test-full
 test-full: indent-check audit book test-ci test-benchmarks test-fuzz
@@ -47,7 +38,13 @@ test-full: indent-check audit book test-ci test-benchmarks test-fuzz
 # on nightly.
 .PHONY: test-release
 test-release:
-	cargo +nightly test -Z unstable-options --profile release --no-fail-fast $(CRATES_TESTED:%=-p %)
+	cargo +nightly test -Z unstable-options --profile release --no-fail-fast --all --exclude $(CRATES_NOT_TESTED:%=--exclude %)
+
+.PHONY: test-release-executables
+test-release-executables:
+	cargo build --release
+	helpers/lucet-toolchain-tests/signature.sh
+	helpers/lucet-toolchain-tests/objdump.sh
 
 .PHONY: test-ci
 test-ci: test-packages test-objdump test-bitrot test-signature test-objdump
@@ -116,4 +113,4 @@ package:
 
 .PHONY: watch
 watch:
-	cargo watch --exec "test $(CRATES_TESTED:%=-p %)"
+	cargo watch --exec "test --all --exclude $(CRATES_NOT_TESTED)"

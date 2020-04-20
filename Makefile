@@ -32,13 +32,11 @@ test-packages:
 .PHONY: test-full
 test-full: indent-check audit book test-ci test-benchmarks test-fuzz
 
-# The --profile release option runs the tests on an artifact built in release
-# mode. We have found regressions in release mode due to optimizations in the
-# past. However, this is an unstable only option for now, so we have to run it
-# on nightly.
+# The --release option runs the tests on an artifact built in release mode. We
+# have found regressions in release mode due to optimizations in the past.
 .PHONY: test-release
 test-release:
-	cargo +nightly test -Z unstable-options --profile release --no-fail-fast --all --exclude $(CRATES_NOT_TESTED:%=--exclude %)
+	cargo test --release --no-fail-fast --all --exclude $(CRATES_NOT_TESTED:%=--exclude %)
 
 .PHONY: test-release-executables
 test-release-executables:
